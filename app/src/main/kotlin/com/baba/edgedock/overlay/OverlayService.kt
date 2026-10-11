@@ -9,14 +9,22 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
 import android.provider.Settings
 import android.view.Gravity
 import android.view.KeyEvent
+import android.view.MotionEvent
+import android.view.View
+import android.view.ViewConfiguration
 import android.view.WindowManager
 import android.view.animation.OvershootInterpolator
+import android.view.animation.PathInterpolator
+import android.view.inputmethod.InputMethodManager
+import kotlin.math.abs
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
@@ -47,10 +55,17 @@ class OverlayService : Service() {
     private val lifecycleOwner = OverlayLifecycleOwner()
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val expandedState = mutableStateOf(false)
+    private val morphProgress = mutableStateOf(0f)
+    /** True only after the open morph has finished, so the list stays out of the animation. */
+    private val panelSettled = mutableStateOf(false)
+    private val bubbleXState = mutableStateOf(0)
+    private val bubbleYState = mutableStateOf(600)
 
-    private var bubbleX = 0
-    private var bubbleY = 600
     private var edgeSnapAnimator: ValueAnimator? = null
+    private var morphAnimator: ValueAnimator? = null
+    private var morphEdge = 0f
+    private var touchView: View? = null
+    private var touchParams: WindowManager.LayoutParams? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -69,8 +84,8 @@ class OverlayService : Service() {
         }
 
         val saved = preferences.bubblePositionBlocking()
-        bubbleX = saved.x
-        bubbleY = saved.y
+        bubbleXState.value = saved.x
+        bubbleYState.value = saved.y
 
         running.set(true)
         addOverlayView()
@@ -94,6 +109,10 @@ class OverlayService : Service() {
     override fun onDestroy() {
         running.set(false)
         edgeSnapAnimator?.cancel()
+        morphAnimator?.apply {
+            removeAllListeners()
+            cancel()
+        }
         serviceScope.cancel()
         removeOverlayView()
         super.onDestroy()
@@ -132,11 +151,19 @@ class OverlayService : Service() {
             setViewTreeLifecycleOwner(lifecycleOwner)
             setViewTreeViewModelStoreOwner(lifecycleOwner)
             setViewTreeSavedStateRegistryOwner(lifecycleOwner)
+            setBackgroundColor(android.graphics.Color.TRANSPARENT)
             setContent {
                 EdgeDockTheme {
                     DockOverlayContent(
                         expanded = expandedState.value,
-                        onExpandedChange = { setExpanded(it) },
+                        // Read inside draw/graphicsLayer only, so frames do not recompose the list.
+                        morphProgress = { morphProgress.value },
+                        panelSettled = panelSettled.value,
+                        bubbleX = bubbleXState.value,
+                        bubbleY = bubbleYState.value,
+                        onExpandedChange = { expanded ->
+                            if (expanded) expand() else collapse()
+                        },
                         onBubbleDrag = { dx, dy -> onBubbleDrag(dx, dy) },
                         onBubbleDragEnd = { onBubbleDragEnd() },
                     )
@@ -145,23 +172,76 @@ class OverlayService : Service() {
         }
         overlayView = composeView
 
+        // Fixed fullscreen window. The morph is drawn inside it, so the window bounds
+        // never change mid-animation (that resize is what jumps toward the screen corner).
         val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            overlayFlags(touchable = false),
             PixelFormat.TRANSLUCENT,
         ).apply {
-            gravity = Gravity.TOP or Gravity.START
-            x = bubbleX
-            y = bubbleY
+            gravity = Gravity.TOP or Gravity.LEFT
+            x = 0
+            y = 0
+            softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
+            coverSystemBars()
         }
         layoutParams = params
-
         windowManager.addView(composeView, params)
+        addTouchWindow()
+    }
+
+    /**
+     * Overlay windows are inset below the status bar unless told otherwise, which leaves
+     * an undimmed strip at the top and shifts the bubble's touch target off the icon.
+     */
+    private fun WindowManager.LayoutParams.coverSystemBars() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            fitInsetsTypes = 0
+            setFitInsetsIgnoringVisibility(true)
+            layoutInDisplayCutoutMode =
+                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+        }
+        alpha = 1f
+    }
+
+    private fun overlayFlags(touchable: Boolean): Int {
+        val base = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+        return if (touchable) base else base or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+    }
+
+    /** Invisible hit target for the bubble. The fullscreen window only draws. */
+    private fun addTouchWindow() {
+        val bubblePx = dpToPx(BUBBLE_DP)
+        val touch = View(this).apply {
+            setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            setOnTouchListener { _, event -> onTouchBubble(event) }
+        }
+        val params = WindowManager.LayoutParams(
+            bubblePx,
+            bubblePx,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            PixelFormat.TRANSLUCENT,
+        ).apply {
+            gravity = Gravity.TOP or Gravity.LEFT
+            x = bubbleXState.value
+            y = bubbleYState.value
+            coverSystemBars()
+        }
+        touchView = touch
+        touchParams = params
+        windowManager.addView(touch, params)
     }
 
     private fun removeOverlayView() {
+        touchView?.let { view -> runCatching { windowManager.removeViewImmediate(view) } }
+        touchView = null
+        touchParams = null
         overlayView?.let { view ->
             lifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
             lifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
@@ -173,77 +253,214 @@ class OverlayService : Service() {
         layoutParams = null
     }
 
-    /** Exactly one window resize per open/close transition - see plan doc for why. */
-    private fun setExpanded(expanded: Boolean) {
+    private fun expand() {
+        val view = overlayView ?: return
+        if (expandedState.value && morphEdge > 0.99f) return
+        edgeSnapAnimator?.cancel()
+        setTouchInteractive(false)
+        setOverlayTouchable(true)
+        panelSettled.value = false
+        expandedState.value = true
+        animateMorph(to = 1f)
+    }
+
+    private fun collapse() {
+        val view = overlayView ?: return
+        if (!expandedState.value && morphEdge < 0.01f) return
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(view.windowToken, 0)
+        panelSettled.value = false
+        clearPanelFocus()
+        animateMorph(to = 0f)
+    }
+
+    private fun animateMorph(to: Float) {
+        val start = morphEdge
+        morphAnimator?.apply {
+            removeAllListeners()
+            removeAllUpdateListeners()
+            cancel()
+        }
+        morphAnimator = null
+        if (abs(start - to) < 0.001f) {
+            morphEdge = to
+            morphProgress.value = to
+            if (to == 0f) {
+                finishCollapse()
+            } else {
+                panelSettled.value = true
+                enablePanelFocus()
+            }
+            return
+        }
+        val opening = to > start
+        val fullMs = if (opening) OPEN_MS else MORPH_MS
+        val animator = ValueAnimator.ofFloat(start, to).apply {
+            duration = (fullMs * abs(to - start)).toLong().coerceIn(90L, fullMs)
+            interpolator = if (opening) {
+                PathInterpolator(0.2f, 0.8f, 0.2f, 1f)
+            } else {
+                PathInterpolator(0.4f, 0f, 0.2f, 1f)
+            }
+            addUpdateListener {
+                val t = it.animatedValue as Float
+                morphEdge = t
+                morphProgress.value = t
+            }
+            addListener(
+                object : AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator) {
+                        if (morphAnimator != animation) return
+                        morphEdge = to
+                        morphProgress.value = to
+                        if (to == 0f) {
+                            finishCollapse()
+                        } else {
+                            panelSettled.value = true
+                            enablePanelFocus()
+                        }
+                    }
+                },
+            )
+        }
+        morphAnimator = animator
+        animator.start()
+    }
+
+    private fun finishCollapse() {
+        val view = overlayView ?: return
+        expandedState.value = false
+        panelSettled.value = false
+        morphProgress.value = 0f
+        morphEdge = 0f
+        clearPanelFocus()
+        setOverlayTouchable(false)
+        placeTouchWindow(bubbleXState.value, bubbleYState.value)
+        setTouchInteractive(true)
+        view.setOnKeyListener(null)
+    }
+
+    private fun enablePanelFocus() {
         val params = layoutParams ?: return
         val view = overlayView ?: return
-
-        if (expanded) {
-            params.width = WindowManager.LayoutParams.MATCH_PARENT
-            params.height = WindowManager.LayoutParams.MATCH_PARENT
-            params.x = 0
-            params.y = 0
-            params.flags = params.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
-            // Keep IME hidden until the user taps the search field.
-            params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_STATE_UNCHANGED or
-                WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                params.flags = params.flags or WindowManager.LayoutParams.FLAG_BLUR_BEHIND
-                params.setBlurBehindRadius(56)
+        if (!expandedState.value) return
+        params.flags = overlayFlags(touchable = true) and
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
+        params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING or
+            WindowManager.LayoutParams.SOFT_INPUT_STATE_UNCHANGED
+        view.isFocusableInTouchMode = true
+        view.setOnKeyListener { _, keyCode, event ->
+            if (keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
+                collapse()
+                true
+            } else {
+                false
             }
-            // Overlay windows are not Activities — handle system back here.
-            view.isFocusableInTouchMode = true
-            view.requestFocus()
-            view.setOnKeyListener { _, keyCode, event ->
-                if (keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
-                    setExpanded(false)
-                    true
-                } else {
-                    false
-                }
-            }
-        } else {
-            params.width = WindowManager.LayoutParams.WRAP_CONTENT
-            params.height = WindowManager.LayoutParams.WRAP_CONTENT
-            params.x = bubbleX
-            params.y = bubbleY
-            params.flags = params.flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-            params.softInputMode = WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                params.flags = params.flags and WindowManager.LayoutParams.FLAG_BLUR_BEHIND.inv()
-                params.setBlurBehindRadius(0)
-            }
-            view.setOnKeyListener(null)
         }
-        windowManager.updateViewLayout(view, params)
-        expandedState.value = expanded
+        params.coverSystemBars()
+        runCatching { windowManager.updateViewLayout(view, params) }
+        view.requestFocus()
+    }
+
+    private fun clearPanelFocus() {
+        val params = layoutParams ?: return
+        val view = overlayView ?: return
+        params.flags = overlayFlags(touchable = expandedState.value || morphEdge > 0.01f)
+        view.setOnKeyListener(null)
+        view.clearFocus()
+        params.coverSystemBars()
+        runCatching { windowManager.updateViewLayout(view, params) }
+    }
+
+    private fun setOverlayTouchable(touchable: Boolean) {
+        val params = layoutParams ?: return
+        val view = overlayView ?: return
+        val keepFocus = params.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE == 0
+        params.flags = overlayFlags(touchable)
+        if (keepFocus && touchable) {
+            params.flags = params.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
+        }
+        params.coverSystemBars()
+        runCatching { windowManager.updateViewLayout(view, params) }
+    }
+
+    private fun setTouchInteractive(interactive: Boolean) {
+        val params = touchParams ?: return
+        val view = touchView ?: return
+        params.flags = if (interactive) {
+            params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()
+        } else {
+            params.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+        }
+        params.coverSystemBars()
+        runCatching { windowManager.updateViewLayout(view, params) }
+    }
+
+    private var touchDownRawX = 0f
+    private var touchDownRawY = 0f
+    private var touchLastRawX = 0f
+    private var touchLastRawY = 0f
+    private var touchDragging = false
+
+    private fun onTouchBubble(event: MotionEvent): Boolean {
+        if (expandedState.value) return false
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                edgeSnapAnimator?.cancel()
+                touchDownRawX = event.rawX
+                touchDownRawY = event.rawY
+                touchLastRawX = event.rawX
+                touchLastRawY = event.rawY
+                touchDragging = false
+            }
+            MotionEvent.ACTION_MOVE -> {
+                val dx = event.rawX - touchLastRawX
+                val dy = event.rawY - touchLastRawY
+                touchLastRawX = event.rawX
+                touchLastRawY = event.rawY
+                val slop = ViewConfiguration.get(this).scaledTouchSlop
+                val travelledX = event.rawX - touchDownRawX
+                val travelledY = event.rawY - touchDownRawY
+                if (!touchDragging && travelledX * travelledX + travelledY * travelledY > slop * slop) {
+                    touchDragging = true
+                }
+                if (touchDragging) onBubbleDrag(dx, dy)
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                if (touchDragging) onBubbleDragEnd() else expand()
+            }
+        }
+        return true
     }
 
     private fun onBubbleDrag(dxPx: Float, dyPx: Float) {
-        val params = layoutParams ?: return
-        val view = overlayView ?: return
-        edgeSnapAnimator?.cancel()
-
         val bounds = windowManager.currentWindowMetrics.bounds
-        bubbleX = (bubbleX + dxPx.toInt()).coerceIn(0, (bounds.width() - view.width).coerceAtLeast(0))
-        bubbleY = (bubbleY + dyPx.toInt()).coerceIn(0, (bounds.height() - view.height).coerceAtLeast(0))
-        params.x = bubbleX
-        params.y = bubbleY
-        windowManager.updateViewLayout(view, params)
+        val bubblePx = dpToPx(BUBBLE_DP)
+        val x = (bubbleXState.value + dxPx.toInt()).coerceIn(0, (bounds.width() - bubblePx).coerceAtLeast(0))
+        val y = (bubbleYState.value + dyPx.toInt()).coerceIn(0, (bounds.height() - bubblePx).coerceAtLeast(0))
+        placeTouchWindow(x, y)
     }
 
     private fun onBubbleDragEnd() {
-        val view = overlayView ?: return
         val bounds = windowManager.currentWindowMetrics.bounds
-        val bubbleWidthPx = view.width.takeIf { it > 0 } ?: dpToPx(56)
-        val targetX = if (bubbleX + bubbleWidthPx / 2 < bounds.width() / 2) 0 else bounds.width() - bubbleWidthPx
-        animateBubbleTo(targetX, bubbleY)
+        val bubblePx = dpToPx(BUBBLE_DP)
+        val x = bubbleXState.value
+        val targetX = if (x + bubblePx / 2 < bounds.width() / 2) 0 else bounds.width() - bubblePx
+        animateBubbleTo(targetX, bubbleYState.value)
+    }
+
+    private fun placeTouchWindow(x: Int, y: Int) {
+        val params = touchParams ?: return
+        val view = touchView ?: return
+        bubbleXState.value = x
+        bubbleYState.value = y
+        params.x = x
+        params.y = y
+        runCatching { windowManager.updateViewLayout(view, params) }
     }
 
     private fun animateBubbleTo(targetX: Int, targetY: Int) {
-        val params = layoutParams ?: return
-        val view = overlayView ?: return
-        val startX = bubbleX
+        val startX = bubbleXState.value
 
         edgeSnapAnimator?.cancel()
         edgeSnapAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
@@ -251,17 +468,14 @@ class OverlayService : Service() {
             interpolator = OvershootInterpolator(1.1f)
             addUpdateListener { animator ->
                 val fraction = animator.animatedValue as Float
-                bubbleX = (startX + (targetX - startX) * fraction).toInt()
-                bubbleY = targetY
-                params.x = bubbleX
-                params.y = bubbleY
-                windowManager.updateViewLayout(view, params)
+                val x = (startX + (targetX - startX) * fraction).toInt()
+                placeTouchWindow(x, targetY)
             }
             addListener(
-                object : android.animation.AnimatorListenerAdapter() {
-                    override fun onAnimationEnd(animation: android.animation.Animator) {
+                object : AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator) {
                         serviceScope.launch {
-                            preferences.setBubblePosition(bubbleX, bubbleY)
+                            preferences.setBubblePosition(bubbleXState.value, bubbleYState.value)
                         }
                     }
                 },
@@ -310,6 +524,9 @@ class OverlayService : Service() {
     companion object {
         private const val CHANNEL_ID = "edgedock_overlay"
         private const val NOTIFICATION_ID = 1
+        private const val BUBBLE_DP = 56
+        private const val OPEN_MS = 200L
+        private const val MORPH_MS = 280L
         const val ACTION_STOP = "com.baba.edgedock.action.STOP"
 
         private val running = AtomicBoolean(false)
