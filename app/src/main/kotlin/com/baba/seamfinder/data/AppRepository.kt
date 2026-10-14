@@ -1,4 +1,4 @@
-package com.baba.edgedock.data
+package com.baba.seamfinder.data
 
 import android.app.AppOpsManager
 import android.app.usage.UsageStatsManager
@@ -90,10 +90,10 @@ class AppRepository(private val context: Context) {
     suspend fun warm() {
         val apps = allLaunchableApps()
         apps.take(24).forEach { iconBitmap(it) }
-        recentApps(limit = 5)
+        recentApps()
     }
 
-    suspend fun recentApps(limit: Int = 5): List<AppEntry> = withContext(Dispatchers.IO) {
+    suspend fun recentApps(limit: Int = RECENT_LIMIT): List<AppEntry> = withContext(Dispatchers.IO) {
         if (!hasUsageAccess()) {
             recentCache = emptyList()
             return@withContext emptyList()
@@ -198,5 +198,6 @@ class AppRepository(private val context: Context) {
 
     companion object {
         private const val USAGE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000L
+        const val RECENT_LIMIT = 9
     }
 }

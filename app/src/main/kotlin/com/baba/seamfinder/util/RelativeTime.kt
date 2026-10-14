@@ -1,4 +1,4 @@
-package com.baba.edgedock.util
+package com.baba.seamfinder.util
 
 import java.text.SimpleDateFormat
 import java.util.Date

@@ -1,11 +1,11 @@
-package com.baba.edgedock
+package com.baba.seamfinder
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
-import com.baba.edgedock.data.UserPreferences
-import com.baba.edgedock.overlay.OverlayService
+import com.baba.seamfinder.data.UserPreferences
+import com.baba.seamfinder.overlay.OverlayService
 
 /**
  * Restarts the overlay after reboot when the user left the dock enabled and

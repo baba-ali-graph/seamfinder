@@ -1,0 +1,14 @@
+Seamfinder keeps a small search bubble on the edge of the screen. Tap it to search the apps installed on your phone and open one, without going back to the home screen or the app drawer.
+
+Drag the bubble anywhere. When you let go, it springs to the nearer side and stays where you left it. An empty search shows recently used apps when Usage Access is allowed. Typing filters every launchable app by name.
+
+Seamfinder is not a replacement home screen. It draws over the app you are already using, then collapses back to the bubble after a launch.
+
+What it asks for:
+
+* Overlay permission, so the bubble and search panel can appear over other apps.
+* Notifications, because Android requires a foreground-service notification to keep the bubble available.
+* Usage Access, optional, only to sort the empty search by recent apps.
+* Restart after boot, only if you left the bubble turned on.
+
+Seamfinder has no ads, no analytics, and no network access. App lists and usage history stay on the device.

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Seamfinder privacy policy</title>
+  <style>
+    :root {
+      --bg: #10141f;
+      --text: #f4efe6;
+      --muted: #c4bdb2;
+      --accent: #e0a56a;
+      --line: rgba(224, 165, 106, 0.28);
+      --measure: 38rem;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 1.0625rem;
+      line-height: 1.6;
+      font-weight: 400;
+    }
+
+    .skip {
+      position: absolute;
+      left: 1rem;
+      top: -3rem;
+      padding: 0.4rem 0.75rem;
+      background: var(--accent);
+      color: var(--bg);
+      border-radius: 0.25rem;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .skip:focus { top: 1rem; }
+
+    main {
+      max-width: var(--measure);
+      margin: 0 auto;
+      padding: 3.5rem 1.35rem 4.5rem;
+    }
+
+    h1 {
+      margin: 0 0 0.4rem;
+      font-size: 2rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+    }
+
+    .updated {
+      margin: 0 0 2.25rem;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    h2 {
+      margin: 2.25rem 0 0.65rem;
+      padding-top: 0.35rem;
+      font-size: 1.15rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--accent);
+    }
+
+    p, li { color: var(--text); }
+
+    p { margin: 0.7rem 0; }
+
+    ul {
+      margin: 0.6rem 0 0;
+      padding-left: 1.15rem;
+    }
+
+    li { margin: 0.55rem 0; }
+
+    li strong { font-weight: 600; }
+
+    a {
+      color: var(--accent);
+      text-underline-offset: 0.18em;
+    }
+
+    a:hover { color: var(--text); }
+
+    footer {
+      margin-top: 2.75rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <main id="content">
+    <h1>Seamfinder privacy policy</h1>
+    <p class="updated">Last updated 14 October 2026</p>
+
+    <section>
+      <h2>What Seamfinder is</h2>
+      <p>Seamfinder is a local quick-launch overlay for Android, published as <code>com.baba.seamfinder</code> by Baba-Ali AbdulAziz. A small search bubble sits on the screen edge. Tap it to search and open any installed app without going to the home screen.</p>
+    </section>
+
+    <section>
+      <h2>No network, no accounts</h2>
+      <p>Seamfinder has no ads, no analytics, no crash reporting, and no accounts. It does not declare the INTERNET permission and has no cloud backend. Nothing the app reads about your device is sent anywhere.</p>
+    </section>
+
+    <section>
+      <h2>Permissions</h2>
+      <ul>
+        <li><strong>Overlay (draw over other apps).</strong> Draws the search bubble and panel over other apps.</li>
+        <li><strong>Usage Access (optional).</strong> Orders the empty search by recently used apps. Search still works without it.</li>
+        <li><strong>Notifications.</strong> Android requires this so the foreground service that keeps the bubble alive can show its notification.</li>
+        <li><strong>Boot completed.</strong> Restarts the bubble after reboot if you left it enabled.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Data on your device</h2>
+      <p>Seamfinder stores only a few preferences on the device: whether the dock is on or off, the bubble’s position along the screen edge, and your list or grid layout preference. Installed-app lists and usage history stay on the device and are never uploaded.</p>
+    </section>
+
+    <section>
+      <h2>Sharing</h2>
+      <p>Seamfinder does not sell, share, or transfer personal data to third parties.</p>
+    </section>
+
+    <section>
+      <h2>Contact</h2>
+      <p>Open an issue on the project repository: <a href="https://github.com/baba-ali-graph/seamfinder">github.com/baba-ali-graph/seamfinder</a>.</p>
+    </section>
+
+    <section>
+      <h2>License</h2>
+      <p>The app is licensed under the Apache License 2.0.</p>
+    </section>
+
+    <footer>
+      Seamfinder · Baba-Ali AbdulAziz
+    </footer>
+  </main>
+</body>
+</html>

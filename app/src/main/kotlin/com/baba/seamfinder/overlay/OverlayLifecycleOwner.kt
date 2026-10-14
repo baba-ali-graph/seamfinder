@@ -1,4 +1,4 @@
-package com.baba.edgedock.overlay
+package com.baba.seamfinder.overlay
 
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner

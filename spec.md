@@ -1,9 +1,9 @@
-# EdgeDock — Product Spec
+# Seamfinder — Product Spec
 
 ## What it is
-EdgeDock is an Android system overlay: a small, semi-transparent search **bubble** docked to the screen edge. Dragging it moves it anywhere; releasing snaps it to the nearest edge (left or right) with a springy bounce. Tapping it expands a centered, elevated **search panel** — an auto-focused text field over a list of apps — for quickly finding and launching any installed app without going through the home screen or app drawer.
+Seamfinder is an Android system overlay: a small, semi-transparent search **bubble** docked to the screen edge. Dragging it moves it anywhere; releasing snaps it to the nearest edge (left or right) with a springy bounce. Tapping it expands a centered, elevated **search panel** — an auto-focused text field over a list of apps — for quickly finding and launching any installed app without going through the home screen or app drawer.
 
-*Pivot note (2026-09-16): EdgeDock originally shipped as an edge-swipe **task switcher** (a panel of recently-used apps for switching between them). It's now a **quick app finder/launcher** instead — search-and-launch any installed app, not just switch between recent ones. Most of the underlying overlay/permission plumbing carried over; the interaction model, UI, and data layer were rebuilt. See "Cut from the original PRD" below for what was deliberately left out of this version.*
+*Pivot note (2026-09-16): Seamfinder originally shipped as an edge-swipe **task switcher** (a panel of recently-used apps for switching between them). It's now a **quick app finder/launcher** instead — search-and-launch any installed app, not just switch between recent ones. Most of the underlying overlay/permission plumbing carried over; the interaction model, UI, and data layer were rebuilt. See "Cut from the original PRD" below for what was deliberately left out of this version.*
 
 ## Target platform
 - **minSdk 31** (Android 12), **targetSdk 36** (Android 16), **compileSdk 37** (required by current AndroidX Compose/AboutLibraries releases; compiling against a newer SDK than targetSdk is normal and doesn't change runtime behavior).

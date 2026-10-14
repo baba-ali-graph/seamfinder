@@ -1,13 +1,13 @@
-package com.baba.edgedock
+package com.baba.seamfinder
 
 import android.app.Application
-import com.baba.edgedock.data.AppRepository
+import com.baba.seamfinder.data.AppRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
-class EdgeDockApp : Application() {
+class SeamfinderApp : Application() {
     lateinit var appRepository: AppRepository
         private set
 

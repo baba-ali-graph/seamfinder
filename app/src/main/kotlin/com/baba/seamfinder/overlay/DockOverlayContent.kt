@@ -1,4 +1,4 @@
-package com.baba.edgedock.overlay
+package com.baba.seamfinder.overlay
 
 import android.content.Intent
 import androidx.compose.animation.AnimatedContent
@@ -89,13 +89,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import kotlin.math.roundToInt
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.baba.edgedock.EdgeDockApp
-import com.baba.edgedock.R
-import com.baba.edgedock.data.AppEntry
-import com.baba.edgedock.data.AppRepository
-import com.baba.edgedock.data.AppsLayout
-import com.baba.edgedock.data.UserPreferences
-import com.baba.edgedock.util.formatLastUsed
+import com.baba.seamfinder.SeamfinderApp
+import com.baba.seamfinder.R
+import com.baba.seamfinder.data.AppEntry
+import com.baba.seamfinder.data.AppRepository
+import com.baba.seamfinder.data.AppsLayout
+import com.baba.seamfinder.data.UserPreferences
+import com.baba.seamfinder.util.formatLastUsed
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -118,7 +118,7 @@ fun DockOverlayContent(
 ) {
     val context = LocalContext.current
     val repository = remember {
-        (context.applicationContext as EdgeDockApp).appRepository
+        (context.applicationContext as SeamfinderApp).appRepository
     }
     val layoutDirection = LocalLayoutDirection.current
 
@@ -251,7 +251,7 @@ private fun SearchPanel(
 
     LaunchedEffect(settled) {
         if (!settled) return@LaunchedEffect
-        launch { recentApps = repository.recentApps(limit = 5) }
+        launch { recentApps = repository.recentApps() }
         launch { allApps = repository.allLaunchableApps() }
         usageAccessGranted = repository.hasUsageAccess()
     }

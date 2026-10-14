@@ -1,4 +1,4 @@
-package com.baba.edgedock.overlay
+package com.baba.seamfinder.overlay
 
 import android.animation.ValueAnimator
 import android.app.Notification
@@ -34,11 +34,11 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
-import com.baba.edgedock.EdgeDockApp
-import com.baba.edgedock.MainActivity
-import com.baba.edgedock.R
-import com.baba.edgedock.data.UserPreferences
-import com.baba.edgedock.ui.theme.EdgeDockTheme
+import com.baba.seamfinder.SeamfinderApp
+import com.baba.seamfinder.MainActivity
+import com.baba.seamfinder.R
+import com.baba.seamfinder.data.UserPreferences
+import com.baba.seamfinder.ui.theme.SeamfinderTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -91,7 +91,7 @@ class OverlayService : Service() {
         addOverlayView()
         serviceScope.launch {
             preferences.setDockEnabled(true)
-            (application as EdgeDockApp).appRepository.warm()
+            (application as SeamfinderApp).appRepository.warm()
         }
     }
 
@@ -153,7 +153,7 @@ class OverlayService : Service() {
             setViewTreeSavedStateRegistryOwner(lifecycleOwner)
             setBackgroundColor(android.graphics.Color.TRANSPARENT)
             setContent {
-                EdgeDockTheme {
+                SeamfinderTheme {
                     DockOverlayContent(
                         expanded = expandedState.value,
                         // Read inside draw/graphicsLayer only, so frames do not recompose the list.
@@ -522,12 +522,12 @@ class OverlayService : Service() {
     }
 
     companion object {
-        private const val CHANNEL_ID = "edgedock_overlay"
+        private const val CHANNEL_ID = "seamfinder_overlay"
         private const val NOTIFICATION_ID = 1
         private const val BUBBLE_DP = 56
         private const val OPEN_MS = 200L
         private const val MORPH_MS = 280L
-        const val ACTION_STOP = "com.baba.edgedock.action.STOP"
+        const val ACTION_STOP = "com.baba.seamfinder.action.STOP"
 
         private val running = AtomicBoolean(false)
 

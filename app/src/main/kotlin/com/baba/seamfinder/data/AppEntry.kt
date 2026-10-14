@@ -1,4 +1,4 @@
-package com.baba.edgedock.data
+package com.baba.seamfinder.data
 
 import android.graphics.drawable.Drawable
 import androidx.compose.runtime.Immutable

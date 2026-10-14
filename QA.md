@@ -1,4 +1,4 @@
-# EdgeDock — QA Checklist
+# Seamfinder — QA Checklist
 
 Manual, on-device/emulator checklist. Run after each change to the overlay; run the full sheet before any Play submission. The Redmi Note 15 (HyperOS) is the reference real device; an Android 16 (API 36) emulator is used for faster day-to-day iteration.
 
@@ -21,16 +21,16 @@ Manual, on-device/emulator checklist. Run after each change to the overlay; run 
 ## Search panel (expanded state)
 - [ ] Panel expands centered on screen over a dimmed scrim, with a visible open animation.
 - [ ] Search field is auto-focused and the real keyboard appears without the user needing to tap it manually.
-- [ ] Empty query shows real recently-used apps (verify by actually switching between a few real apps first, then opening EdgeDock).
+- [ ] Empty query shows real recently-used apps (verify by actually switching between a few real apps first, then opening Seamfinder).
 - [ ] Typing filters the full installed-app list in real time, case-insensitive substring match.
 - [ ] Tapping a result launches that app and the panel collapses back to the bubble.
 - [ ] Tapping the scrim (outside the card) collapses the panel without launching anything.
-- [ ] EdgeDock itself never appears in either the recent or search-results list.
+- [ ] Seamfinder itself never appears in either the recent or search-results list.
 - [ ] After collapsing, the bubble reappears at its last snapped edge position, not a default position.
 
 ## Performance & stability
 - [ ] No visible frame drops opening/closing the panel or during bubble drag.
-- [ ] `adb shell dumpsys gfxinfo com.baba.edgedock` shows no janky frames during a drag + expand/collapse cycle.
+- [ ] `adb shell dumpsys gfxinfo com.baba.seamfinder` shows no janky frames during a drag + expand/collapse cycle.
 - [ ] Force-stopping and reopening the app restores bubble/service state correctly (no duplicate bubbles, no crash).
 - [ ] `adb logcat` shows no crashes during a mixed-use session (drag, expand, search, launch, collapse, repeat).
 

@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "EdgeDock"
+rootProject.name = "Seamfinder"
 include(":app")

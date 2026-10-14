@@ -1,0 +1,1 @@
+Find any installed app from a bubble on the screen edge.

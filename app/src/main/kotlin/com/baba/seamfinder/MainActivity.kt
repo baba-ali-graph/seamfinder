@@ -1,4 +1,4 @@
-package com.baba.edgedock
+package com.baba.seamfinder
 
 import android.content.Intent
 import android.net.Uri
@@ -41,10 +41,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.baba.edgedock.data.AppsLayout
-import com.baba.edgedock.data.UserPreferences
-import com.baba.edgedock.overlay.OverlayService
-import com.baba.edgedock.ui.theme.EdgeDockTheme
+import com.baba.seamfinder.data.AppsLayout
+import com.baba.seamfinder.data.UserPreferences
+import com.baba.seamfinder.overlay.OverlayService
+import com.baba.seamfinder.ui.theme.SeamfinderTheme
 import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
 import com.mikepenz.aboutlibraries.ui.compose.produceLibraries
 import kotlinx.coroutines.launch
@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            EdgeDockTheme {
+            SeamfinderTheme {
                 var screen by remember { mutableStateOf(Screen.Settings) }
                 when (screen) {
                     Screen.Settings -> SettingsScreen(
@@ -77,7 +77,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun SettingsScreen(onOpenAbout: () -> Unit) {
     val context = LocalContext.current
-    val appRepository = remember { (context.applicationContext as EdgeDockApp).appRepository }
+    val appRepository = remember { (context.applicationContext as SeamfinderApp).appRepository }
     val preferences = remember { UserPreferences(context.applicationContext) }
     val scope = rememberCoroutineScope()
     val appsLayout by preferences.appsLayout.collectAsStateWithLifecycle(initialValue = AppsLayout.LIST)

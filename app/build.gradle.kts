@@ -5,12 +5,12 @@ plugins {
 }
 
 android {
-    namespace = "com.baba.edgedock"
+    namespace = "com.baba.seamfinder"
     compileSdk = 37
     buildToolsVersion = "37.0.0"
 
     defaultConfig {
-        applicationId = "com.baba.edgedock"
+        applicationId = "com.baba.seamfinder"
         minSdk = 31
         targetSdk = 36
         versionCode = 1

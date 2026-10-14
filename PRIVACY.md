@@ -1,8 +1,8 @@
-# EdgeDock Privacy Policy
+# Seamfinder Privacy Policy
 
-Last updated: 2026-10-05
+Last updated: 2026-10-14
 
-EdgeDock is a local quick-launch overlay for Android. It does not include ads,
+Seamfinder is a local quick-launch overlay for Android. It does not include ads,
 analytics, crash reporting, accounts, or any network access.
 
 ## Permissions
@@ -22,7 +22,7 @@ Only on-device preferences:
 - Bubble edge position
 - List / grid layout preference
 
-EdgeDock never uploads installed-app lists, usage history, or any other
+Seamfinder never uploads installed-app lists, usage history, or any other
 personal data. There is no cloud backend.
 
 ## Sharing
@@ -32,5 +32,7 @@ has no `INTERNET` permission.
 
 ## Contact
 
-For privacy questions, contact the developer via the store listing or the
-project repository.
+For privacy questions, open an issue on
+[github.com/baba-ali-graph/seamfinder](https://github.com/baba-ali-graph/seamfinder).
+The same text is published at
+[baba-ali-graph.github.io/seamfinder](https://baba-ali-graph.github.io/seamfinder/).

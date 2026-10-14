@@ -1,4 +1,4 @@
-package com.baba.edgedock.data
+package com.baba.seamfinder.data
 
 import android.content.Context
 import androidx.datastore.core.DataStore
